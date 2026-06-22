@@ -16,13 +16,16 @@ const CONFIG = {
 
   DEFAULT_CURRENCY: '',   // no assumption; configured per-user in Settings
 
-  SCOPES: [
+  // Base scopes always requested (Sheets + identity).
+  // drive.file is added dynamically when receipt upload is enabled.
+  SCOPES_BASE: [
     'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive.file',
     'openid',
     'profile',
     'email',
   ].join(' '),
+
+  SCOPE_DRIVE: 'https://www.googleapis.com/auth/drive.file',
 
   SHEET_NAME: 'ExpenseTracker',
   SHEET_COLUMNS: ['ID', 'Date', 'Amount', 'Currency', 'Category', 'Merchant', 'Notes', 'Receipt URL', 'Created At'],

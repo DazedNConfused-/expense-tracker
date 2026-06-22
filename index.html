@@ -179,6 +179,17 @@
         </p>
       </div>
 
+      <div style="margin-bottom:var(--sp-5)">
+        <label style="display:flex;align-items:center;gap:var(--sp-3);cursor:pointer">
+          <input type="checkbox" x-model="setupForm.receiptUpload"
+                 style="width:18px;height:18px;accent-color:var(--clr-primary);flex-shrink:0">
+          <span>
+            <span style="font-size:14px;font-weight:600;color:var(--clr-text-1)">Enable receipt upload</span><br>
+            <span style="font-size:12px;color:var(--clr-text-3)">Stores photos/PDFs in Google Drive. Leave off for spreadsheet-only use.</span>
+          </span>
+        </label>
+      </div>
+
       <div style="margin-bottom:var(--sp-4)">
         <details style="font-size:12px;color:var(--clr-text-3)">
           <summary style="cursor:pointer;font-weight:600;color:var(--clr-text-2);margin-bottom:var(--sp-2)">Already have a Google Sheet? (optional)</summary>
@@ -229,7 +240,7 @@
           <svg width="14" height="14"><use href="#icon-check"/></svg>
           Full expense history in a Google Sheet you own
         </li>
-        <li>
+        <li x-show="receiptUploadEnabled">
           <svg width="14" height="14"><use href="#icon-check"/></svg>
           Receipt photos stored in your Google Drive
         </li>
@@ -578,8 +589,8 @@
                       @input="formDirty=true" placeholder="Any extra details…" rows="3"></textarea>
           </div>
 
-          <!-- Receipt -->
-          <div class="form-group">
+          <!-- Receipt (only shown when receipt upload is enabled) -->
+          <div class="form-group" x-show="receiptUploadEnabled">
             <div class="form-label">Receipt</div>
             <div class="receipt-section">
               <!-- Preview (existing or newly selected) -->
@@ -676,6 +687,20 @@
                          style="width:80px;text-align:center;text-transform:uppercase;padding:6px 8px;font-size:14px;font-weight:600"
                          maxlength="3" placeholder="ARS" @change="saveSettings()" aria-label="Default currency code">
                 </div>
+              </div>
+              <div class="settings-row" style="cursor:default">
+                <div class="settings-row-icon" style="background:#FFF7ED;color:#C2410C">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M3 8h2m3 0h2m3 0h2"/></svg>
+                </div>
+                <div class="settings-row-text">
+                  <div class="settings-row-title">Receipt Upload</div>
+                  <div class="settings-row-desc">Store photos &amp; PDFs in Google Drive</div>
+                </div>
+                <label style="display:flex;align-items:center;cursor:pointer">
+                  <input type="checkbox" x-model="receiptUploadEnabled" @change="saveSettings()"
+                         style="width:18px;height:18px;accent-color:var(--clr-primary)"
+                         aria-label="Enable receipt upload">
+                </label>
               </div>
             </div>
           </div>
@@ -850,8 +875,8 @@
                 <div class="detail-value" x-text="selectedExpense.notes" style="white-space:pre-wrap"></div>
               </div>
             </div>
-            <!-- Receipt -->
-            <div class="detail-row">
+            <!-- Receipt (row visible when upload enabled OR expense already has a URL) -->
+            <div class="detail-row" x-show="receiptUploadEnabled || selectedExpense.receiptUrl">
               <div class="detail-icon">🧾</div>
               <div class="flex-1">
                 <div class="detail-label">Receipt</div>
@@ -862,7 +887,7 @@
                     View Receipt
                   </a>
                 </template>
-                <template x-if="!selectedExpense.receiptUrl">
+                <template x-if="!selectedExpense.receiptUrl && receiptUploadEnabled">
                   <div style="display:flex;align-items:center;gap:var(--sp-2);margin-top:var(--sp-2)">
                     <span class="text-sm text-muted">No receipt attached</span>
                     <button class="btn btn-sm btn-ghost" style="padding:4px 10px;font-size:12px"

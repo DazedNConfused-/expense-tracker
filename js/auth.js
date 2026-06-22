@@ -27,9 +27,17 @@ const Auth = (function () {
     // Prefer the client ID stored by the user via the setup screen;
     // fall back to the value hard-coded in config.js (if any).
     const clientId = localStorage.getItem('et_client_id') || CONFIG.GOOGLE_CLIENT_ID;
+
+    // Include drive.file scope only when receipt upload is enabled.
+    let scope = CONFIG.SCOPES_BASE;
+    try {
+      const settings = JSON.parse(localStorage.getItem('et_settings') || '{}');
+      if (settings.receiptUpload) scope += ' ' + CONFIG.SCOPE_DRIVE;
+    } catch {}
+
     _tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: CONFIG.SCOPES,
+      scope,
       callback: (response) => {
         if (response.error) {
           if (_rejectSignIn) _rejectSignIn(new Error(response.error));

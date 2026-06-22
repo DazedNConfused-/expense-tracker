@@ -8,7 +8,7 @@ function appData() {
 
     // ==================  SETUP  ==================
     isSetupNeeded: false,
-    setupForm: { clientId: '', sheetId: '', defaultCurrency: '' },
+    setupForm: { clientId: '', sheetId: '', defaultCurrency: '', receiptUpload: false },
     setupErrors: {},
 
     // ==================  AUTH  ==================
@@ -71,7 +71,8 @@ function appData() {
     _toastTimer: null,
 
     // ==================  SETTINGS  ==================
-    defaultCurrency: '',   // empty = currency-agnostic; user sets in Settings
+    defaultCurrency: '',        // empty = currency-agnostic; user sets in Settings
+    receiptUploadEnabled: false, // opt-in; requires drive.file scope
 
     // ==============================================
     //  INIT
@@ -88,16 +89,22 @@ function appData() {
         const cfg = JSON.parse(atob(param));
         if (cfg.clientId)  localStorage.setItem('et_client_id', cfg.clientId);
         if (cfg.sheetId)   localStorage.setItem('et_sheet_id',  cfg.sheetId);
-        if (cfg.currency)  localStorage.setItem('et_settings',  JSON.stringify({ defaultCurrency: cfg.currency }));
+        if (cfg.currency || cfg.receiptUpload !== undefined) {
+          const existing = JSON.parse(localStorage.getItem('et_settings') || '{}');
+          if (cfg.currency)                   existing.defaultCurrency = cfg.currency;
+          if (cfg.receiptUpload !== undefined) existing.receiptUpload   = cfg.receiptUpload;
+          localStorage.setItem('et_settings', JSON.stringify(existing));
+        }
         return true;
       } catch { return false; }
     },
 
-    _buildConfigUrl(clientId, sheetId, currency) {
+    _buildConfigUrl(clientId, sheetId, currency, receiptUpload) {
       const cfg = {};
-      if (clientId) cfg.clientId = clientId;
-      if (sheetId)  cfg.sheetId  = sheetId;
-      if (currency) cfg.currency = currency;
+      if (clientId)                    cfg.clientId      = clientId;
+      if (sheetId)                     cfg.sheetId       = sheetId;
+      if (currency)                    cfg.currency      = currency;
+      if (receiptUpload !== undefined) cfg.receiptUpload = receiptUpload;
       const encoded = btoa(JSON.stringify(cfg));
       const url = new URL(window.location.href);
       url.searchParams.set('cfg', encoded);
@@ -122,6 +129,7 @@ function appData() {
       try {
         const saved = JSON.parse(localStorage.getItem('et_settings') || '{}');
         if (saved.defaultCurrency !== undefined) this.defaultCurrency = saved.defaultCurrency;
+        if (saved.receiptUpload    !== undefined) this.receiptUploadEnabled = saved.receiptUpload;
       } catch {}
 
       this.form.currency = this.defaultCurrency;
@@ -247,11 +255,14 @@ function appData() {
       if (Object.keys(errors).length > 0) return;
 
       localStorage.setItem('et_client_id', id);
-      // Optional: pre-set default currency
+      // Optional fields
       const cur = this.setupForm.defaultCurrency.trim().toUpperCase();
-      if (cur) {
-        localStorage.setItem('et_settings', JSON.stringify({ defaultCurrency: cur }));
-      }
+      const receipt = this.setupForm.receiptUpload;
+      const settings = {};
+      if (cur)     settings.defaultCurrency = cur;
+      settings.receiptUpload = receipt;
+      localStorage.setItem('et_settings', JSON.stringify(settings));
+
       // Optional: pre-register an existing Sheet ID
       const sid = this.setupForm.sheetId.trim();
       if (sid) {
@@ -259,7 +270,7 @@ function appData() {
       }
       // Encode config into URL so a bookmarked link survives localStorage wipes.
       // Navigate to that URL (also causes a reload so auth.js picks up the new Client ID).
-      window.location.href = this._buildConfigUrl(id, sid || null, cur || null);
+      window.location.href = this._buildConfigUrl(id, sid || null, cur || null, receipt);
     },
 
     clearClientId() {
@@ -837,7 +848,15 @@ function appData() {
     // ==============================================
 
     saveSettings() {
-      localStorage.setItem('et_settings', JSON.stringify({ defaultCurrency: this.defaultCurrency }));
+      localStorage.setItem('et_settings', JSON.stringify({
+        defaultCurrency: this.defaultCurrency,
+        receiptUpload: this.receiptUploadEnabled,
+      }));
+      // Keep ?cfg= URL in sync so bookmarked URL stays accurate.
+      const clientId = localStorage.getItem('et_client_id') || '';
+      const sheetId  = localStorage.getItem('et_sheet_id')  || '';
+      const newUrl   = this._buildConfigUrl(clientId || null, sheetId || null, this.defaultCurrency || null, this.receiptUploadEnabled);
+      window.history.replaceState(null, '', newUrl);
       this.showToast('Settings saved.', 'success');
     },
 
