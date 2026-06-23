@@ -30,6 +30,7 @@ function appData() {
     sheetDisplayUrl: null,       // resolved for appscript mode; built from sheetId for oauth
     sheetUrlInput: '',           // temp input for manual paste in Settings
     sheetUrlFetchFailed: false,  // true when getSheetUrl() fails (old deployment needs update)
+    scriptOutdated: false,       // true when deployed script version < CONFIG.SCRIPT_VERSION
     expenses: [],
     isLoading: false,
 
@@ -68,6 +69,46 @@ function appData() {
     showDetail: false,
     showDeleteConfirm: false,
     isDeleting: false,
+
+    // ==================  DEBTS  ==================
+    debts: [],
+    debtPayments: {},      // keyed by debtId → array of payments
+    showPaidDebts: false,
+    _debtTabsEnsured: false,
+
+    // Debt form state
+    debtForm: {
+      id: null,
+      source: '',
+      totalAmount: '',
+      outstandingBalance: '',
+      currency: '',
+      dueDate: '',
+      notes: '',
+    },
+    debtFormErrors: {},
+    showDebtForm: false,
+    isEditingDebt: false,
+    isSavingDebt: false,
+
+    // Payment form state
+    paymentForm: {
+      debtId: null,
+      debtSource: '',
+      outstandingBalance: 0,
+      debtCurrency: '',
+      amount: '',
+      currency: '',
+      date: '',
+      notes: '',
+    },
+    paymentFormErrors: {},
+    showPaymentForm: false,
+    isSavingPayment: false,
+
+    // Per-debt UI toggles
+    _debtExpanded: {},      // keyed by source key
+    _debtHistoryOpen: {},   // keyed by debt id
 
     // ==================  DASHBOARD  ==================
     dashPeriod: 'this-month',
@@ -241,8 +282,18 @@ function appData() {
         this.isAuthenticated = true;
         this.isInitializing = false;
         await this.loadExpenses();
+        await this.loadDebts();
         // Load cached sheet URL from localStorage first (works for existing deployments).
         this.sheetDisplayUrl = localStorage.getItem('et_sheet_display_url') || null;
+        // Check script version and fetch sheet URL in parallel.
+        AppScript.getScriptVersion()
+          .then(ver => {
+            if (ver < CONFIG.SCRIPT_VERSION) this.scriptOutdated = true;
+          })
+          .catch(() => {
+            // If getScriptVersion fails entirely, treat as version 1 (pre-versioning).
+            this.scriptOutdated = true;
+          });
         // Then try to fetch from script (works for new deployments that support sheetUrl action).
         AppScript.getSheetUrl()
           .then(url => {
@@ -366,7 +417,7 @@ function appData() {
 
     _handleHash() {
       const hash = window.location.hash.replace('#/', '');
-      const valid = ['dashboard', 'expenses', 'settings'];
+      const valid = ['dashboard', 'expenses', 'debts', 'settings'];
       if (valid.includes(hash)) this.currentView = hash;
     },
 
@@ -521,6 +572,7 @@ function appData() {
     async _setupSheetAndLoad() {
       await this._ensureSheet();
       await this.loadExpenses();
+      await this.loadDebts();
     },
 
     async _ensureSheet() {
@@ -555,6 +607,36 @@ function appData() {
       return Sheets.deleteExpense(this.sheetId, id);
     },
 
+    // ---- Debt adapters ----
+    async _dbReadDebts() {
+      if (this.appMode === 'appscript') return AppScript.readAllDebts();
+      return Sheets.readAllDebts(this.sheetId);
+    },
+    async _dbAppendDebt(debt) {
+      if (this.appMode === 'appscript') return AppScript.appendDebt(debt);
+      return Sheets.appendDebt(this.sheetId, debt);
+    },
+    async _dbUpdateDebt(debt) {
+      if (this.appMode === 'appscript') return AppScript.updateDebt(debt);
+      return Sheets.updateDebt(this.sheetId, debt);
+    },
+    async _dbDeleteDebt(id) {
+      if (this.appMode === 'appscript') return AppScript.deleteDebt(id);
+      return Sheets.deleteDebt(this.sheetId, id);
+    },
+    async _dbReadDebtPayments(debtId) {
+      if (this.appMode === 'appscript') return AppScript.readDebtPayments(debtId);
+      return Sheets.readDebtPayments(this.sheetId, debtId);
+    },
+    async _dbAppendDebtPayment(payment) {
+      if (this.appMode === 'appscript') return AppScript.appendDebtPayment(payment);
+      return Sheets.appendDebtPayment(this.sheetId, payment);
+    },
+    async _dbDeleteDebtPayment(id) {
+      if (this.appMode === 'appscript') return AppScript.deleteDebtPayment(id);
+      return Sheets.deleteDebtPayment(this.sheetId, id);
+    },
+
     // ==============================================
     //  DATA
     // ==============================================
@@ -585,6 +667,270 @@ function appData() {
     async refreshExpenses() {
       await this.loadExpenses();
       this.showToast(t('toast.refreshed'), 'success');
+    },
+
+    // ==============================================
+    //  DEBTS
+    // ==============================================
+
+    async loadDebts() {
+      if (this.appMode !== 'appscript' && !this.sheetId) return;
+      if (!this._debtTabsEnsured && this.appMode !== 'appscript') {
+        try { await Sheets.ensureDebtsTabs(this.sheetId); } catch {}
+        this._debtTabsEnsured = true;
+      }
+      try {
+        this.debts = await this._dbReadDebts();
+      } catch (err) {
+        if (err && err.status === 401) { this.handleAuthError(); return; }
+        // Non-fatal: debts tab may not exist yet on first load
+      }
+    },
+
+    get groupedDebts() {
+      const groups = {};
+      for (const d of this.debts) {
+        const key = (d.source || '').trim().toLowerCase();
+        if (!key) continue;
+        if (!groups[key]) {
+          groups[key] = {
+            sourceKey: key,
+            displaySource: d.source,
+            currency: d.currency,
+            totalOutstanding: 0,
+            totalOriginal: 0,
+            debts: [],
+          };
+        }
+        const outstanding = parseFloat(d.outstandingBalance || 0);
+        const original = parseFloat(d.totalAmount || 0);
+        groups[key].totalOutstanding += outstanding;
+        groups[key].totalOriginal += original;
+        groups[key].debts.push(d);
+      }
+      return Object.values(groups)
+        .sort((a, b) => b.totalOutstanding - a.totalOutstanding);
+    },
+
+    get debtSummary() {
+      const byCurrency = {};
+      for (const d of this.debts) {
+        if (d.status === 'paid') continue;
+        const cur = (d.currency || '').toUpperCase();
+        const amt = parseFloat(d.outstandingBalance || 0);
+        if (!cur || amt <= 0) continue;
+        byCurrency[cur] = (byCurrency[cur] || 0) + amt;
+      }
+      return Object.entries(byCurrency).map(([currency, total]) => ({ currency, total }));
+    },
+
+    openAddDebt() {
+      this.isEditingDebt = false;
+      this.debtForm = {
+        id: null,
+        source: '',
+        totalAmount: '',
+        outstandingBalance: '',
+        currency: this.defaultCurrency,
+        notes: '',
+      };
+      this.debtFormErrors = {};
+      this.showDebtForm = true;
+    },
+
+    openEditDebt(debt) {
+      this.isEditingDebt = true;
+      this.debtForm = {
+        id: debt.id,
+        source: debt.source,
+        totalAmount: debt.totalAmount,
+        outstandingBalance: debt.outstandingBalance,
+        currency: debt.currency,
+        notes: debt.notes || '',
+      };
+      this.debtFormErrors = {};
+      this.showDebtForm = true;
+    },
+
+    closeDebtForm() {
+      this.showDebtForm = false;
+    },
+
+    async saveDebt() {
+      const errors = {};
+      const source = (this.debtForm.source || '').trim();
+      if (!source) errors.source = t('error.debt_source');
+      const amount = parseFloat(this.debtForm.totalAmount);
+      if (!this.debtForm.totalAmount || isNaN(amount) || amount <= 0) errors.amount = t('error.debt_amount');
+      if (!this.debtForm.currency) errors.currency = t('error.debt_source');
+      this.debtFormErrors = errors;
+      if (Object.keys(errors).length > 0) return;
+
+      this.isSavingDebt = true;
+      try {
+        if (this.isEditingDebt) {
+          const existing = this.debts.find(d => d.id === this.debtForm.id);
+          const debt = {
+            ...this.debtForm,
+            source,
+            totalAmount: amount.toFixed(2),
+            outstandingBalance: parseFloat(this.debtForm.outstandingBalance || this.debtForm.totalAmount).toFixed(2),
+            currency: this.debtForm.currency.toUpperCase(),
+            dueDate: existing ? (existing.dueDate || '') : '',
+          };
+          await this._dbUpdateDebt(debt);
+          const idx = this.debts.findIndex(d => d.id === debt.id);
+          if (idx >= 0) this.debts.splice(idx, 1, debt);
+          this.showToast(t('toast.debt_updated'), 'success');
+        } else {
+          const debt = {
+            id: crypto.randomUUID(),
+            source,
+            totalAmount: amount.toFixed(2),
+            outstandingBalance: amount.toFixed(2),
+            currency: this.debtForm.currency.toUpperCase(),
+            dueDate: '',
+            notes: this.debtForm.notes.trim(),
+            status: 'open',
+            createdAt: new Date().toISOString(),
+          };
+          await this._dbAppendDebt(debt);
+          this.debts.unshift(debt);
+          this.showToast(t('toast.debt_saved'), 'success');
+        }
+        this.showDebtForm = false;
+      } catch (err) {
+        if (err && err.status === 401) { this.handleAuthError(); return; }
+        this.showToast(t('toast.debt_save_failed'), 'error');
+      } finally {
+        this.isSavingDebt = false;
+      }
+    },
+
+    async confirmDeleteDebt(debtId) {
+      if (!confirm(t('debts.delete_confirm'))) return;
+      try {
+        await this._dbDeleteDebt(debtId);
+        this.debts = this.debts.filter(d => d.id !== debtId);
+        this.showToast(t('toast.debt_deleted'), 'success');
+      } catch (err) {
+        if (err && err.status === 401) { this.handleAuthError(); return; }
+        this.showToast(t('toast.debt_save_failed'), 'error');
+      }
+    },
+
+    openPaymentForm(debt) {
+      this.paymentForm = {
+        debtId: debt.id,
+        debtSource: debt.source,
+        outstandingBalance: parseFloat(debt.outstandingBalance || 0),
+        debtCurrency: debt.currency,
+        amount: '',
+        currency: debt.currency,
+        date: new Date().toISOString().split('T')[0],
+        notes: '',
+      };
+      this.paymentFormErrors = {};
+      this.showPaymentForm = true;
+    },
+
+    closePaymentForm() {
+      this.showPaymentForm = false;
+    },
+
+    async savePayment() {
+      const errors = {};
+      const amount = parseFloat(this.paymentForm.amount);
+      if (!this.paymentForm.amount || isNaN(amount) || amount <= 0) {
+        errors.amount = t('error.payment_amount');
+      } else if (amount > this.paymentForm.outstandingBalance + 0.001) {
+        errors.amount = t('error.payment_overpay');
+      }
+      if (!this.paymentForm.date) errors.date = t('error.debt_source');
+      this.paymentFormErrors = errors;
+      if (Object.keys(errors).length > 0) return;
+
+      this.isSavingPayment = true;
+      try {
+        const payment = {
+          id: crypto.randomUUID(),
+          debtId: this.paymentForm.debtId,
+          amount: amount.toFixed(2),
+          currency: (this.paymentForm.currency || this.paymentForm.debtCurrency).toUpperCase(),
+          date: this.paymentForm.date,
+          notes: (this.paymentForm.notes || '').trim(),
+          createdAt: new Date().toISOString(),
+        };
+
+        // 1. Write expense first (idempotent by ID)
+        const expense = {
+          id: crypto.randomUUID(),
+          date: payment.date,
+          amount: payment.amount,
+          currency: payment.currency,
+          category: 'Debt Payment',
+          merchant: this.paymentForm.debtSource,
+          notes: `Payment toward ${this.paymentForm.debtSource}${payment.notes ? ': ' + payment.notes : ''}`,
+          receiptUrl: '',
+          createdAt: new Date().toISOString(),
+        };
+        await this._dbAppend(expense);
+        this.expenses.unshift(expense);
+
+        // 2. Write payment record
+        await this._dbAppendDebtPayment(payment);
+        if (!this.debtPayments[payment.debtId]) this.debtPayments[payment.debtId] = [];
+        this.debtPayments[payment.debtId].unshift(payment);
+
+        // 3. Update debt outstanding balance
+        const debt = this.debts.find(d => d.id === payment.debtId);
+        if (debt) {
+          const newBalance = Math.max(0, parseFloat(debt.outstandingBalance) - amount);
+          const updatedDebt = {
+            ...debt,
+            outstandingBalance: newBalance.toFixed(2),
+            status: newBalance <= 0 ? 'paid' : 'open',
+          };
+          await this._dbUpdateDebt(updatedDebt);
+          const idx = this.debts.findIndex(d => d.id === debt.id);
+          if (idx >= 0) this.debts.splice(idx, 1, updatedDebt);
+        }
+
+        this.showPaymentForm = false;
+        this.showToast(t('toast.payment_saved'), 'success');
+      } catch (err) {
+        if (err && err.status === 401) { this.handleAuthError(); return; }
+        this.showToast(t('toast.payment_save_failed'), 'error');
+      } finally {
+        this.isSavingPayment = false;
+      }
+    },
+
+    async loadDebtPayments(debtId) {
+      try {
+        const payments = await this._dbReadDebtPayments(debtId);
+        this.debtPayments = { ...this.debtPayments, [debtId]: payments };
+      } catch {}
+    },
+
+    toggleDebtExpanded(sourceKey) {
+      this._debtExpanded = { ...this._debtExpanded, [sourceKey]: !this._debtExpanded[sourceKey] };
+    },
+
+    async toggleDebtHistory(debt) {
+      const open = !this._debtHistoryOpen[debt.id];
+      this._debtHistoryOpen = { ...this._debtHistoryOpen, [debt.id]: open };
+      if (open && !this.debtPayments[debt.id]) {
+        await this.loadDebtPayments(debt.id);
+      }
+    },
+
+    debtProgress(group) {
+      const total = group.totalOriginal;
+      const outstanding = group.totalOutstanding;
+      if (total <= 0) return 100;
+      const paid = total - outstanding;
+      return Math.round((paid / total) * 100);
     },
 
     // ==============================================
@@ -1080,7 +1426,7 @@ function appData() {
     },
 
     get dashboardSummary() {
-      return this.computeDashboardData();
+      return { ...this.computeDashboardData(), debtSummary: this.debtSummary };
     },
 
     // ==============================================
@@ -1302,6 +1648,10 @@ function appData() {
 
     get appVersion() {
       return CONFIG.APP_VERSION;
+    },
+
+    get scriptVersionRequired() {
+      return CONFIG.SCRIPT_VERSION;
     },
 
   };

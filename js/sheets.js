@@ -317,11 +317,262 @@ const Sheets = (function () {
     ];
   }
 
+  // ---- Debt tab management ----
+
+  const DEBTS_TAB    = 'Debts';
+  const PAYMENTS_TAB = 'Debt Payments';
+
+  async function _getAllTabTitles(spreadsheetId) {
+    const data = await _req(
+      `${BASE}/${spreadsheetId}?fields=sheets(properties(sheetId,title))`
+    );
+    return (data.sheets || []).map(s => s.properties);
+  }
+
+  async function _ensureTab(spreadsheetId, tabName, columns) {
+    const tabs = await _getAllTabTitles(spreadsheetId);
+    if (tabs.find(t => t.title === tabName)) return;
+
+    const result = await _req(`${BASE}/${spreadsheetId}:batchUpdate`, {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [{
+          addSheet: { properties: { title: tabName, gridProperties: { frozenRowCount: 1 } } },
+        }],
+      }),
+    });
+    const newSheetId = result.replies[0].addSheet.properties.sheetId;
+
+    await _req(
+      `${BASE}/${spreadsheetId}/values/${_range(tabName, `A1:${String.fromCharCode(64 + columns.length)}1`)}?valueInputOption=RAW`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          range: `'${tabName}'!A1:${String.fromCharCode(64 + columns.length)}1`,
+          majorDimension: 'ROWS',
+          values: [columns],
+        }),
+      }
+    );
+
+    await _req(`${BASE}/${spreadsheetId}:batchUpdate`, {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [
+          {
+            repeatCell: {
+              range: { sheetId: newSheetId, startRowIndex: 0, endRowIndex: 1 },
+              cell: {
+                userEnteredFormat: {
+                  textFormat: { bold: true, fontSize: 11 },
+                  backgroundColor: { red: 0.357, green: 0.31, blue: 0.914 },
+                  foregroundColorStyle: { rgbColor: { red: 1, green: 1, blue: 1 } },
+                  horizontalAlignment: 'CENTER',
+                },
+              },
+              fields: 'userEnteredFormat(textFormat,backgroundColor,foregroundColorStyle,horizontalAlignment)',
+            },
+          },
+          {
+            autoResizeDimensions: {
+              dimensions: { sheetId: newSheetId, dimension: 'COLUMNS', startIndex: 0, endIndex: columns.length },
+            },
+          },
+        ],
+      }),
+    });
+  }
+
+  async function ensureDebtsTabs(spreadsheetId) {
+    await _ensureTab(spreadsheetId, DEBTS_TAB, CONFIG.DEBT_COLUMNS);
+    await _ensureTab(spreadsheetId, PAYMENTS_TAB, CONFIG.DEBT_PAYMENT_COLUMNS);
+  }
+
+  // ---- Debt CRUD ----
+
+  function _debtToRow(d) {
+    return [
+      d.id              || '',
+      d.source          || '',
+      Number(d.totalAmount) || 0,
+      Number(d.outstandingBalance) || 0,
+      d.currency        || '',
+      d.dueDate         || '',
+      d.notes           || '',
+      d.status          || 'open',
+      d.createdAt       || '',
+    ];
+  }
+
+  function _rowToDebt(header, row) {
+    const col = name => header.indexOf(name.toLowerCase());
+    return {
+      id:                 (row[col('id')]                   || '').toString().trim(),
+      source:             (row[col('source')]               || '').toString().trim(),
+      totalAmount:        (row[col('total amount')]         || '0').toString().trim(),
+      outstandingBalance: (row[col('outstanding balance')]  || '0').toString().trim(),
+      currency:           (row[col('currency')]             || '').toString().trim(),
+      dueDate:            _toIso((row[col('due date')]      || '').toString().trim()),
+      notes:              (row[col('notes')]                || '').toString().trim(),
+      status:             (row[col('status')]               || 'open').toString().trim(),
+      createdAt:          (row[col('created at')]           || '').toString().trim(),
+    };
+  }
+
+  async function readAllDebts(spreadsheetId) {
+    const data = await _req(
+      `${BASE}/${spreadsheetId}/values/${_range(DEBTS_TAB)}?majorDimension=ROWS`
+    ).catch(() => ({ values: [] }));
+    const rows = data.values || [];
+    if (rows.length <= 1) return [];
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1).map(row => _rowToDebt(header, row)).filter(d => d.id);
+  }
+
+  async function appendDebt(spreadsheetId, debt) {
+    await _req(
+      `${BASE}/${spreadsheetId}/values/${_range(DEBTS_TAB)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          range: `'${DEBTS_TAB}'`,
+          majorDimension: 'ROWS',
+          values: [_debtToRow(debt)],
+        }),
+      }
+    );
+  }
+
+  async function updateDebt(spreadsheetId, debt) {
+    const loc = await _findRowInTab(spreadsheetId, DEBTS_TAB, debt.id);
+    if (!loc) throw new Error('Debt not found in sheet');
+    const rowNum = loc.rowIndex + 1;
+    const endCol = String.fromCharCode(64 + CONFIG.DEBT_COLUMNS.length);
+    await _req(
+      `${BASE}/${spreadsheetId}/values/${_range(DEBTS_TAB, `A${rowNum}:${endCol}${rowNum}`)}?valueInputOption=USER_ENTERED`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          range: `'${DEBTS_TAB}'!A${rowNum}:${endCol}${rowNum}`,
+          majorDimension: 'ROWS',
+          values: [_debtToRow(debt)],
+        }),
+      }
+    );
+  }
+
+  async function deleteDebt(spreadsheetId, debtId) {
+    const loc = await _findRowInTab(spreadsheetId, DEBTS_TAB, debtId);
+    if (!loc) throw new Error('Debt not found in sheet');
+    await _req(`${BASE}/${spreadsheetId}:batchUpdate`, {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [{
+          deleteDimension: {
+            range: { sheetId: loc.tabSheetId, dimension: 'ROWS', startIndex: loc.rowIndex, endIndex: loc.rowIndex + 1 },
+          },
+        }],
+      }),
+    });
+  }
+
+  // ---- Debt Payment CRUD ----
+
+  function _paymentToRow(p) {
+    return [
+      p.id      || '',
+      p.debtId  || '',
+      Number(p.amount) || 0,
+      p.currency || '',
+      p.date    || '',
+      p.notes   || '',
+      p.createdAt || '',
+    ];
+  }
+
+  function _rowToPayment(header, row) {
+    const col = name => header.indexOf(name.toLowerCase());
+    return {
+      id:        (row[col('id')]         || '').toString().trim(),
+      debtId:    (row[col('debt id')]    || '').toString().trim(),
+      amount:    (row[col('amount')]     || '0').toString().trim(),
+      currency:  (row[col('currency')]   || '').toString().trim(),
+      date:      _toIso((row[col('date')]|| '').toString().trim()),
+      notes:     (row[col('notes')]      || '').toString().trim(),
+      createdAt: (row[col('created at')] || '').toString().trim(),
+    };
+  }
+
+  async function readDebtPayments(spreadsheetId, debtId) {
+    const data = await _req(
+      `${BASE}/${spreadsheetId}/values/${_range(PAYMENTS_TAB)}?majorDimension=ROWS`
+    ).catch(() => ({ values: [] }));
+    const rows = data.values || [];
+    if (rows.length <= 1) return [];
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    return rows.slice(1)
+      .map(row => _rowToPayment(header, row))
+      .filter(p => p.id && (!debtId || p.debtId === debtId))
+      .sort((a, b) => (a.date > b.date ? -1 : 1));
+  }
+
+  async function appendDebtPayment(spreadsheetId, payment) {
+    await _req(
+      `${BASE}/${spreadsheetId}/values/${_range(PAYMENTS_TAB)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          range: `'${PAYMENTS_TAB}'`,
+          majorDimension: 'ROWS',
+          values: [_paymentToRow(payment)],
+        }),
+      }
+    );
+  }
+
+  async function deleteDebtPayment(spreadsheetId, paymentId) {
+    const loc = await _findRowInTab(spreadsheetId, PAYMENTS_TAB, paymentId);
+    if (!loc) throw new Error('Payment not found in sheet');
+    await _req(`${BASE}/${spreadsheetId}:batchUpdate`, {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [{
+          deleteDimension: {
+            range: { sheetId: loc.tabSheetId, dimension: 'ROWS', startIndex: loc.rowIndex, endIndex: loc.rowIndex + 1 },
+          },
+        }],
+      }),
+    });
+  }
+
+  // Find a row by ID in column A of a specific named tab.
+  async function _findRowInTab(spreadsheetId, tabName, id) {
+    const tabs = await _getAllTabTitles(spreadsheetId);
+    const tab = tabs.find(t => t.title === tabName);
+    if (!tab) return null;
+    const data = await _req(`${BASE}/${spreadsheetId}/values/${_range(tabName, 'A:A')}`);
+    const rows = data.values || [];
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i] && rows[i][0] === id) {
+        return { tabSheetId: tab.sheetId, rowIndex: i };
+      }
+    }
+    return null;
+  }
+
   return {
     findOrCreateSheet,
     readAllExpenses,
     appendExpense,
     updateExpense,
     deleteExpense,
+    ensureDebtsTabs,
+    readAllDebts,
+    appendDebt,
+    updateDebt,
+    deleteDebt,
+    readDebtPayments,
+    appendDebtPayment,
+    deleteDebtPayment,
   };
 })();

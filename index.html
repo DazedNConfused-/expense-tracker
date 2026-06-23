@@ -116,6 +116,9 @@
     <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="6 9 12 15 18 9"/>
     </symbol>
+    <symbol id="icon-debt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+    </symbol>
     <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="9 18 15 12 9 6"/>
     </symbol>
@@ -178,7 +181,7 @@
 
       <button class="setup-mode-card" @click="setupMode='fresh'; setupStep=1">
         <div class="setup-mode-icon" style="background:var(--clr-primary-light);color:var(--clr-primary)">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         </div>
         <div class="setup-mode-body">
           <div class="setup-mode-title" x-text="t('setup.fresh.title')"></div>
@@ -189,7 +192,7 @@
 
       <button class="setup-mode-card" @click="setupMode='existing'; setupStep=1">
         <div class="setup-mode-icon" style="background:#ECFDF5;color:#059669">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         </div>
         <div class="setup-mode-body">
           <div class="setup-mode-title" x-text="t('setup.existing.title')"></div>
@@ -200,7 +203,7 @@
 
       <button class="setup-mode-card" @click="setupMode='appscript'; setupStep=1">
         <div class="setup-mode-icon" style="background:#F0FDF4;color:#16A34A">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <div class="setup-mode-body">
           <div class="setup-mode-title"><span x-text="t('setup.appscript.title')"></span> <span style="display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;background:#DCFCE7;color:#15803D;border-radius:99px;letter-spacing:.03em;vertical-align:middle;margin-left:4px">NO OAUTH</span></div>
@@ -325,7 +328,7 @@
             <div style="font-size:13px;font-weight:700;color:var(--clr-text);margin-bottom:var(--sp-2)">Step 1 of 4 — Create your spreadsheet</div>
             <p style="font-size:13px;color:var(--clr-text-2);line-height:1.55;margin-bottom:var(--sp-3)">Go to Google Sheets and create a blank spreadsheet. Give it any name.</p>
             <a href="https://sheets.new" target="_blank" rel="noopener" class="btn btn-secondary btn-full" style="display:flex;align-items:center;justify-content:center;gap:var(--sp-2);text-decoration:none;margin-bottom:var(--sp-3)">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Open Google Sheets
             </a>
             <p style="font-size:12px;color:var(--clr-text-3);line-height:1.5">Once created, come back here.</p>
@@ -484,13 +487,17 @@
           <svg width="18" height="18"><use href="#icon-list"/></svg>
           <span x-text="t('nav.expenses')"></span>
         </button>
+        <button class="sidebar-nav-item" :class="{active: currentView === 'debts'}" @click="navigate('debts')">
+          <svg width="18" height="18"><use href="#icon-debt"/></svg>
+          <span x-text="t('nav.debts')"></span>
+        </button>
       </div>
       <div style="flex:1"></div>
       <button class="sidebar-nav-item sidebar-dark-toggle" @click="toggleDarkMode()" :title="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="!darkMode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="!darkMode">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="darkMode">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="darkMode">
           <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
           <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
@@ -577,6 +584,21 @@
                      x-text="t('dashboard.across_currencies').replace('{n}', dashboardSummary.currencyTotals.length)"></div>
               </div>
             </template>
+          </div>
+
+          <!-- Outstanding debts widget -->
+          <div class="summary-card debt-dashboard-widget" x-show="debtSummary.length > 0" @click="navigate('debts')" role="button" style="cursor:pointer">
+            <div class="summary-label" x-text="t('dashboard.total_outstanding')"></div>
+            <div>
+              <template x-for="(item, i) in debtSummary" :key="item.currency">
+                <div class="summary-amount" style="font-size:22px;line-height:1.3"
+                     x-text="formatCurrency(item.total, item.currency)"></div>
+              </template>
+            </div>
+            <div style="font-size:12px;color:var(--clr-primary);margin-top:var(--sp-2);display:flex;align-items:center;gap:4px">
+              <span x-text="t('dashboard.view_debts')"></span>
+              <svg width="12" height="12"><use href="#icon-chevron-right"/></svg>
+            </div>
           </div>
 
           <!-- Loading state -->
@@ -926,10 +948,10 @@
             <div class="settings-card">
               <div class="settings-row" @click="toggleDarkMode()" role="button" tabindex="0" @keydown.enter="toggleDarkMode()" @keydown.space.prevent="toggleDarkMode()">
                 <div class="settings-row-icon" :style="darkMode ? 'background:#1E2233;color:#A5B4FC' : 'background:#EEF2FF;color:#5B4FE9'">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="!darkMode">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="!darkMode">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
                   </svg>
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="darkMode">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-show="darkMode">
                     <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
                     <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
                     <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
@@ -947,7 +969,7 @@
               </div>
               <div class="settings-row" style="cursor:default">
                 <div class="settings-row-icon" style="background:var(--clr-primary-light);color:var(--clr-primary)">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
                 </div>
                 <div class="settings-row-text">
                   <div class="settings-row-title" x-text="t('settings.currency')"></div>
@@ -961,7 +983,7 @@
               </div>
               <div class="settings-row" style="cursor:default" x-show="appMode !== 'appscript'">
                 <div class="settings-row-icon" style="background:#FFF7ED;color:#C2410C">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M3 8h2m3 0h2m3 0h2"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M3 8h2m3 0h2m3 0h2"/></svg>
                 </div>
                 <div class="settings-row-text">
                   <div class="settings-row-title" x-text="t('settings.receipt_upload')"></div>
@@ -1041,7 +1063,7 @@
                           <span>Choose emoji</span>
                         </template>
                       </span>
-                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                            :style="showEmojiPicker ? 'transform:rotate(180deg)' : ''">
                         <polyline points="3 6 7 10 11 6"/>
                       </svg>
@@ -1093,7 +1115,7 @@
                    @click="openSheet()"
                    @keydown.enter="openSheet()">
                 <div class="settings-row-icon" style="background:#ECFDF5;color:#059669">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                 </div>
                 <div class="settings-row-text">
                   <div class="settings-row-title" x-text="t('settings.open_sheet')"></div>
@@ -1115,14 +1137,6 @@
                     <strong style="color:var(--clr-text)">Your Apps Script needs updating.</strong><br>
                     The deployed script doesn't support automatic URL detection. Re-deploy the latest script version to fix this — or paste your sheet URL below as a one-time workaround.
                   </div>
-                  <details style="margin-top:var(--sp-2)">
-                    <summary style="font-size:13px;color:var(--clr-primary);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:4px">
-                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                      Show updated script
-                    </summary>
-                    <pre style="margin:var(--sp-2) 0 0;padding:var(--sp-3);background:var(--clr-surface-2);border-radius:var(--r-md);font-size:11px;overflow-x:auto;max-height:180px;white-space:pre-wrap;word-break:break-all;color:var(--clr-text-2)" x-text="getScriptSource()"></pre>
-                    <button class="btn btn-secondary" style="margin-top:var(--sp-2);width:100%;font-size:13px" @click="copyScriptSource()">Copy script to clipboard</button>
-                  </details>
                   <div style="margin-top:var(--sp-3);display:flex;gap:var(--sp-2);align-items:center">
                     <input type="url" class="form-input" x-model="sheetUrlInput"
                            placeholder="https://docs.google.com/spreadsheets/d/…"
@@ -1144,6 +1158,53 @@
                 </div>
                 <div class="settings-row-action"><svg width="16" height="16"><use href="#icon-chevron-right"/></svg></div>
               </div>
+
+              <!-- AppScript version row -->
+              <div class="settings-row" x-show="appMode === 'appscript'" style="cursor:default"
+                   :style="scriptOutdated ? 'border-left:3px solid var(--clr-warning);padding-left:calc(var(--sp-4) - 3px)' : ''">
+                <div class="settings-row-icon" :style="scriptOutdated ? 'background:#FFFBEB;color:#D97706' : 'background:var(--clr-success-bg);color:var(--clr-success)'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div class="settings-row-text">
+                  <div class="settings-row-title" x-text="scriptOutdated ? t('settings.script_outdated') : t('settings.script_version')"></div>
+                  <div class="settings-row-desc" x-text="scriptOutdated ? t('settings.script_outdated.desc') : `v${scriptVersionRequired} — up to date`"></div>
+                </div>
+              </div>
+
+              <!-- Script update panel (shown when outdated) -->
+              <template x-if="appMode === 'appscript' && scriptOutdated">
+                <div style="padding:0 var(--sp-4) var(--sp-4)">
+                  <div style="background:#FFFBEB;border-radius:var(--r-md);padding:var(--sp-3);font-size:13px;color:var(--clr-text-2);line-height:1.6;border:1px solid #FDE68A">
+                    <strong style="color:#92400E" x-text="'⚠️ ' + t('settings.script_outdated')"></strong><br>
+                    <span x-text="t('settings.script_outdated.desc')"></span>
+                  </div>
+                  <div style="margin-top:var(--sp-3);padding:var(--sp-3);background:var(--clr-surface-2);border-radius:var(--r-md);font-size:13px;color:var(--clr-text-2);line-height:1.7">
+                    <strong style="color:var(--clr-text)" x-text="t('settings.script_update_steps') + ':'"></strong>
+                    <ol style="padding-left:var(--sp-5);margin-top:var(--sp-2)">
+                      <li>Open your Google Sheet and go to <strong>Extensions → Apps Script</strong></li>
+                      <li>Select all the code in the editor and delete it</li>
+                      <li>Paste the updated script below</li>
+                      <li>Click <strong>Deploy → Manage deployments</strong></li>
+                      <li>Edit the existing deployment and set Version to <strong>New version</strong>, then click <strong>Deploy</strong></li>
+                    </ol>
+                  </div>
+                  <div style="margin-top:var(--sp-2)">
+                    <pre style="padding:var(--sp-3);background:var(--clr-surface-2);border-radius:var(--r-md);font-size:11px;overflow-x:auto;max-height:180px;white-space:pre-wrap;word-break:break-all;color:var(--clr-text-2);border:1px solid var(--clr-border)" x-text="getScriptSource()"></pre>
+                    <div style="margin-top:var(--sp-2);display:flex;gap:var(--sp-2)">
+                      <button class="btn btn-primary" style="flex:1;font-size:13px" @click="copyScriptSource()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copy script to clipboard
+                      </button>
+                      <a href="https://script.google.com/home" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:1;font-size:13px;display:flex;align-items:center;justify-content:center;gap:var(--sp-1);text-decoration:none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        <span x-text="t('settings.open_appscript')"></span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -1154,7 +1215,7 @@
               <!-- Google Client ID / Script URL (masked) -->
               <div class="settings-row" @click="clearClientId()" role="button" tabindex="0" @keydown.enter="clearClientId()">
                 <div class="settings-row-icon" style="background:#F5F3FF;color:#6D28D9">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 </div>
                 <div class="settings-row-text">
                   <div class="settings-row-title" x-text="appMode === 'appscript' ? 'Script URL' : 'Google Client ID'"></div>
@@ -1164,7 +1225,7 @@
               </div>
               <div class="settings-row" @click="signOut()" role="button" tabindex="0" @keydown.enter="signOut()">
                 <div class="settings-row-icon" style="background:var(--clr-danger-bg);color:var(--clr-danger)">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 </div>
                 <div class="settings-row-text">
                   <div class="settings-row-title" style="color:var(--clr-danger)" x-text="t('settings.sign_out')"></div>
@@ -1180,7 +1241,7 @@
             <div class="settings-card">
               <div class="settings-row" style="cursor:default">
                 <div class="settings-row-icon" style="background:var(--clr-primary-light);color:var(--clr-primary)">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 </div>
                 <div class="settings-row-text">
                   <div class="settings-row-title">Expense Tracker</div>
@@ -1201,7 +1262,268 @@
         </div>
       </div><!-- /settings -->
 
+      <!-- -------- DEBTS -------- -->
+      <div x-show="currentView === 'debts'">
+        <div class="view-header">
+          <h1 x-text="t('debts.title')"></h1>
+          <button class="btn btn-primary btn-sm" @click="openAddDebt()">
+            <svg width="14" height="14"><use href="#icon-plus"/></svg>
+            <span x-text="t('debts.add_debt')"></span>
+          </button>
+        </div>
+
+        <!-- Dashboard debt widget (inline at top of debts view) -->
+        <div class="debt-summary-widget" x-show="debtSummary.length > 0">
+          <div class="debt-widget-label" x-text="t('dashboard.total_outstanding')"></div>
+          <div class="debt-widget-totals">
+            <template x-for="(item, i) in debtSummary" :key="item.currency">
+              <span>
+                <span x-show="i > 0" style="margin-right:4px">·</span>
+                <span class="debt-widget-amount" x-text="formatCurrency(item.total, item.currency)"></span>
+              </span>
+            </template>
+          </div>
+        </div>
+
+        <!-- Show paid toggle -->
+        <div class="debt-filter-bar" x-show="debts.some(d => d.status === 'paid')">
+          <label class="debt-toggle-label">
+            <input type="checkbox" x-model="showPaidDebts" style="accent-color:var(--clr-primary);width:15px;height:15px">
+            <span x-text="t('debts.show_paid')"></span>
+          </label>
+        </div>
+
+        <!-- Empty state -->
+        <template x-if="debts.length === 0">
+          <div class="empty-state">
+            <div class="empty-icon">💳</div>
+            <h3 x-text="t('debts.empty.title')"></h3>
+            <p x-text="t('debts.empty.desc')"></p>
+          </div>
+        </template>
+
+        <!-- Debt source cards -->
+        <div class="debt-list" x-show="debts.length > 0">
+          <template x-for="group in groupedDebts" :key="group.sourceKey">
+            <div class="debt-source-card"
+                 x-show="showPaidDebts || group.totalOutstanding > 0 || group.debts.some(d => d.status === 'open')">
+              <!-- Source card header -->
+              <div class="debt-source-header" @click="toggleDebtExpanded(group.sourceKey)" role="button" tabindex="0"
+                   @keydown.enter="toggleDebtExpanded(group.sourceKey)">
+                <div class="debt-source-icon">💳</div>
+                <div class="debt-source-info">
+                  <div class="debt-source-name" x-text="group.displaySource"></div>
+                  <div class="debt-source-meta">
+                    <span x-text="formatCurrency(group.totalOutstanding, group.currency)"></span>
+                    <span class="debt-source-count" x-show="group.debts.length > 1"
+                          x-text="'· ' + group.debts.length + ' debts'"></span>
+                  </div>
+                </div>
+                <div class="debt-source-right">
+                  <div class="debt-progress-bar">
+                    <div class="debt-progress-fill" :style="`width:${debtProgress(group)}%`"></div>
+                  </div>
+                  <span class="debt-progress-pct" x-text="debtProgress(group) + '%'"></span>
+                  <svg width="16" height="16" class="debt-chevron" :class="{open: _debtExpanded[group.sourceKey]}">
+                    <use href="#icon-chevron-down"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Individual debt entries -->
+              <div class="debt-entries" x-show="_debtExpanded[group.sourceKey]">
+                <template x-for="debt in group.debts" :key="debt.id">
+                  <div class="debt-entry" x-show="showPaidDebts || debt.status !== 'paid'">
+                    <!-- Paid badge -->
+                    <div class="debt-entry-header">
+                      <div class="debt-entry-amounts">
+                        <span class="debt-entry-outstanding" x-text="formatCurrency(debt.outstandingBalance, debt.currency)"></span>
+                        <span class="debt-entry-original text-muted text-xs" x-text="'of ' + formatCurrency(debt.totalAmount, debt.currency)"></span>
+                      </div>
+                      <div class="debt-entry-actions">
+                        <span class="debt-paid-badge" x-show="debt.status === 'paid'" x-text="t('debts.paid_badge')"></span>
+                        <button class="btn btn-sm btn-primary" x-show="debt.status !== 'paid'"
+                                @click.stop="openPaymentForm(debt)" x-text="t('debts.pay')"></button>
+                        <button class="btn btn-sm btn-ghost" @click.stop="openEditDebt(debt)">
+                          <svg width="14" height="14"><use href="#icon-edit"/></svg>
+                        </button>
+                        <button class="btn btn-sm btn-ghost" style="color:var(--clr-danger)" @click.stop="confirmDeleteDebt(debt.id)">
+                          <svg width="14" height="14"><use href="#icon-trash"/></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="debt-entry-meta" x-show="debt.notes">
+                      <span x-show="debt.notes" class="text-xs text-muted" x-text="debt.notes"></span>
+                    </div>
+
+                    <!-- Payment history toggle -->
+                    <button class="debt-history-toggle" @click.stop="toggleDebtHistory(debt)">
+                      <span x-text="t('debts.payment_history')"></span>
+                      <svg width="14" height="14" :class="{open: _debtHistoryOpen[debt.id]}">
+                        <use href="#icon-chevron-down"/>
+                      </svg>
+                    </button>
+
+                    <!-- Payment history list -->
+                    <div class="debt-history-list" x-show="_debtHistoryOpen[debt.id]">
+                      <template x-if="!debtPayments[debt.id] || debtPayments[debt.id].length === 0">
+                        <p class="text-xs text-muted" style="padding:var(--sp-2) 0" x-text="t('debts.no_payments')"></p>
+                      </template>
+                      <template x-for="pmt in (debtPayments[debt.id] || [])" :key="pmt.id">
+                        <div class="debt-payment-row">
+                          <span class="text-xs text-muted" x-text="formatDateShort(pmt.date)"></span>
+                          <span class="text-sm font-medium" x-text="formatCurrency(pmt.amount, pmt.currency)"></span>
+                          <span class="text-xs text-muted truncate" x-show="pmt.notes" x-text="pmt.notes"></span>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div><!-- /debts -->
+
     </div><!-- /view-container -->
+
+    <!-- ============================================================
+         DEBT FORM MODAL
+         ============================================================ -->
+    <div class="overlay" x-show="showDebtForm"
+         @click="closeDebtForm()"
+         x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from"
+         x-transition:leave="fade-enter-active" x-transition:leave-end="fade-enter-from"
+         style="z-index:800"></div>
+
+    <div class="bottom-sheet" x-show="showDebtForm" style="z-index:900"
+         x-transition:enter="slide-up-enter-active" x-transition:enter-start="slide-up-enter-from"
+         x-transition:leave="slide-up-leave-active" x-transition:leave-end="slide-up-leave-to"
+         role="dialog" aria-modal="true" :aria-label="isEditingDebt ? t('debts.edit_title') : t('debts.add_title')">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div class="text-base font-semibold" x-text="isEditingDebt ? t('debts.edit_title') : t('debts.add_title')"></div>
+        <button class="sheet-close" @click="closeDebtForm()" aria-label="Close">
+          <svg width="16" height="16"><use href="#icon-close"/></svg>
+        </button>
+      </div>
+      <div class="sheet-body" style="padding-bottom:var(--sp-4)">
+        <!-- Source/Creditor -->
+        <div class="form-group">
+          <label class="form-label"><span x-text="t('debts.source')"></span> <span class="text-danger">*</span></label>
+          <input type="text" class="form-input" :class="{error: debtFormErrors.source}"
+                 x-model="debtForm.source" :placeholder="t('debts.source.placeholder')"
+                 list="debt-source-suggestions">
+          <datalist id="debt-source-suggestions">
+            <template x-for="src in [...new Set(debts.map(d => d.source).filter(Boolean))]" :key="src">
+              <option :value="src"></option>
+            </template>
+          </datalist>
+          <div class="form-error" x-show="debtFormErrors.source" x-text="debtFormErrors.source"></div>
+        </div>
+        <!-- Amount + Currency -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label"><span x-text="t('debts.total_amount')"></span> <span class="text-danger">*</span></label>
+            <div class="amount-input-group" :class="{error: debtFormErrors.amount}">
+              <span class="amount-currency-badge" x-text="debtForm.currency || defaultCurrency || '¤'"></span>
+              <input type="number" class="amount-number-input"
+                     x-model="debtForm.totalAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+            </div>
+            <div class="form-error" x-show="debtFormErrors.amount" x-text="debtFormErrors.amount"></div>
+          </div>
+          <div class="form-group" style="width:80px">
+            <label class="form-label" x-text="t('form.currency')"></label>
+            <input type="text" class="form-input" x-model="debtForm.currency"
+                   maxlength="3" style="text-transform:uppercase;text-align:center" placeholder="USD">
+          </div>
+        </div>
+        <!-- Notes -->
+        <div class="form-group">
+          <label class="form-label" x-text="t('debts.notes')"></label>
+          <textarea class="form-textarea" x-model="debtForm.notes"
+                    :placeholder="t('debts.notes.placeholder')" rows="2"></textarea>
+        </div>
+        <!-- Buttons -->
+        <div class="btn-row" style="margin-top:var(--sp-4);padding:0">
+          <button class="btn btn-secondary" @click="closeDebtForm()" x-text="t('debts.cancel')"></button>
+          <button class="btn btn-primary flex-1" @click="saveDebt()" :disabled="isSavingDebt">
+            <span x-show="!isSavingDebt" x-text="t('debts.save')"></span>
+            <span x-show="isSavingDebt" x-text="t('form.saving')"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         PAYMENT FORM MODAL
+         ============================================================ -->
+    <div class="overlay" x-show="showPaymentForm"
+         @click="closePaymentForm()"
+         x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from"
+         x-transition:leave="fade-enter-active" x-transition:leave-end="fade-enter-from"
+         style="z-index:810"></div>
+
+    <div class="bottom-sheet" x-show="showPaymentForm" style="z-index:910"
+         x-transition:enter="slide-up-enter-active" x-transition:enter-start="slide-up-enter-from"
+         x-transition:leave="slide-up-leave-active" x-transition:leave-end="slide-up-leave-to"
+         role="dialog" aria-modal="true" :aria-label="t('debts.payment_title')">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <div class="text-base font-semibold" x-text="t('debts.payment_title')"></div>
+          <div class="text-xs text-muted" x-text="paymentForm.debtSource"></div>
+        </div>
+        <button class="sheet-close" @click="closePaymentForm()" aria-label="Close">
+          <svg width="16" height="16"><use href="#icon-close"/></svg>
+        </button>
+      </div>
+      <div class="sheet-body" style="padding-bottom:var(--sp-4)">
+        <!-- Remaining balance context -->
+        <div class="payment-balance-context">
+          <span class="text-xs text-muted" x-text="t('debts.remaining_balance') + ':'"></span>
+          <span class="font-semibold" x-text="formatCurrency(paymentForm.outstandingBalance, paymentForm.debtCurrency)"></span>
+        </div>
+        <!-- Amount + Currency -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label"><span x-text="t('debts.payment_amount')"></span> <span class="text-danger">*</span></label>
+            <div class="amount-input-group" :class="{error: paymentFormErrors.amount}">
+              <span class="amount-currency-badge" x-text="paymentForm.currency || paymentForm.debtCurrency || '¤'"></span>
+              <input type="number" class="amount-number-input"
+                     x-model="paymentForm.amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+            </div>
+            <div class="form-error" x-show="paymentFormErrors.amount" x-text="paymentFormErrors.amount"></div>
+          </div>
+          <div class="form-group" style="width:80px">
+            <label class="form-label" x-text="t('form.currency')"></label>
+            <input type="text" class="form-input" x-model="paymentForm.currency"
+                   maxlength="3" style="text-transform:uppercase;text-align:center" placeholder="USD">
+          </div>
+        </div>
+        <!-- Date -->
+        <div class="form-group">
+          <label class="form-label" x-text="t('debts.payment_date')"></label>
+          <input type="date" class="form-input" x-model="paymentForm.date">
+          <div class="form-error" x-show="paymentFormErrors.date" x-text="paymentFormErrors.date"></div>
+        </div>
+        <!-- Notes -->
+        <div class="form-group">
+          <label class="form-label" x-text="t('debts.notes')"></label>
+          <textarea class="form-textarea" x-model="paymentForm.notes"
+                    :placeholder="t('debts.notes.placeholder')" rows="2"></textarea>
+        </div>
+        <!-- Buttons -->
+        <div class="btn-row" style="margin-top:var(--sp-4);padding:0">
+          <button class="btn btn-secondary" @click="closePaymentForm()" x-text="t('debts.cancel')"></button>
+          <button class="btn btn-primary flex-1" @click="savePayment()" :disabled="isSavingPayment">
+            <span x-show="!isSavingPayment" x-text="t('debts.payment_save')"></span>
+            <span x-show="isSavingPayment" x-text="t('debts.payment_saving')"></span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ============================================================
          BOTTOM NAVIGATION
@@ -1209,22 +1531,27 @@
     <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
       <button class="nav-tab" :class="{active: currentView === 'dashboard'}"
               @click="navigate('dashboard')" :aria-label="t('nav.dashboard')" role="tab" :aria-selected="currentView === 'dashboard'">
-        <svg width="22" height="22"><use href="#icon-dashboard"/></svg>
+        <svg width="20" height="20"><use href="#icon-dashboard"/></svg>
         <span x-text="t('nav.dashboard')"></span>
       </button>
       <button class="nav-tab" :class="{active: currentView === 'expenses'}"
               @click="navigate('expenses')" :aria-label="t('nav.expenses')" role="tab" :aria-selected="currentView === 'expenses'">
-        <svg width="22" height="22"><use href="#icon-list"/></svg>
+        <svg width="20" height="20"><use href="#icon-list"/></svg>
         <span x-text="t('nav.expenses')"></span>
       </button>
       <div class="nav-add-tab">
         <button class="nav-add-btn" @click="navigate('add')" aria-label="Add expense">
-          <svg width="22" height="22"><use href="#icon-plus"/></svg>
+          <svg width="20" height="20"><use href="#icon-plus"/></svg>
         </button>
       </div>
+      <button class="nav-tab" :class="{active: currentView === 'debts'}"
+              @click="navigate('debts')" :aria-label="t('nav.debts')" role="tab" :aria-selected="currentView === 'debts'">
+        <svg width="20" height="20"><use href="#icon-debt"/></svg>
+        <span x-text="t('nav.debts')"></span>
+      </button>
       <button class="nav-tab" :class="{active: currentView === 'settings'}"
               @click="navigate('settings')" :aria-label="t('nav.settings')" role="tab" :aria-selected="currentView === 'settings'">
-        <svg width="22" height="22"><use href="#icon-settings"/></svg>
+        <svg width="20" height="20"><use href="#icon-settings"/></svg>
         <span x-text="t('nav.settings')"></span>
       </button>
     </nav>
