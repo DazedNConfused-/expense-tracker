@@ -56,6 +56,11 @@ const AppScript = (() => {
     return _call({ action: 'delete', id });
   }
 
+  async function getSheetUrl() {
+    const json = await _call({ action: 'sheetUrl' });
+    return json.url || null;
+  }
+
   const SCRIPT_SOURCE = `// ExpenseTracker — Apps Script backend
 // Deploy: Extensions → Apps Script → Deploy → New deployment
 //   Type: Web app | Execute as: Me | Who has access: Anyone
@@ -67,11 +72,12 @@ function doGet(e) {
   try {
     var d = JSON.parse(e.parameter.p);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (d.action === 'ping')   return ok({ status: 'ok' });
-    if (d.action === 'read')   return ok(readAll(ss));
-    if (d.action === 'append') return ok(appendRow(ss, d.expense));
-    if (d.action === 'update') return ok(updateRow(ss, d.expense));
-    if (d.action === 'delete') return ok(deleteRow(ss, d.id));
+    if (d.action === 'ping')     return ok({ status: 'ok' });
+    if (d.action === 'sheetUrl') return ok({ url: ss.getUrl() });
+    if (d.action === 'read')     return ok(readAll(ss));
+    if (d.action === 'append')   return ok(appendRow(ss, d.expense));
+    if (d.action === 'update')   return ok(updateRow(ss, d.expense));
+    if (d.action === 'delete')   return ok(deleteRow(ss, d.id));
     return ok({ error: 'Unknown action' });
   } catch(err) { return ok({ error: err.toString() }); }
 }
@@ -183,6 +189,7 @@ function ci(h, name) { var i=h.indexOf(name); return i>=0?i:999; }`;
   return {
     init,
     ping,
+    getSheetUrl,
     readAllExpenses,
     appendExpense,
     updateExpense,

@@ -27,6 +27,9 @@ function appData() {
 
     // ==================  DATA  ==================
     sheetId: null,
+    sheetDisplayUrl: null,       // resolved for appscript mode; built from sheetId for oauth
+    sheetUrlInput: '',           // temp input for manual paste in Settings
+    sheetUrlFetchFailed: false,  // true when getSheetUrl() fails (old deployment needs update)
     expenses: [],
     isLoading: false,
 
@@ -78,6 +81,7 @@ function appData() {
     // ==================  SETTINGS  ==================
     defaultCurrency: '',        // empty = currency-agnostic; user sets in Settings
     receiptUploadEnabled: false, // opt-in; requires drive.file scope
+    darkMode: false,
 
     // ==============================================
     //  INIT
@@ -121,7 +125,27 @@ function appData() {
       return url.toString();
     },
 
+    // Dark mode — called first to avoid flash (CSS anti-flash script handles
+    // the very first paint; this syncs Alpine state with what CSS already applied).
+    _applyDarkMode() {
+      document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light');
+    },
+    initDarkMode() {
+      const saved = localStorage.getItem('et_dark_mode');
+      this.darkMode = saved === 'true' ||
+        (saved === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      this._applyDarkMode();
+    },
+    toggleDarkMode() {
+      this.darkMode = !this.darkMode;
+      localStorage.setItem('et_dark_mode', this.darkMode);
+      this._applyDarkMode();
+    },
+
     async init() {
+      // Apply saved theme immediately (syncs Alpine state; CSS already handled first paint).
+      this.initDarkMode();
+
       // Check URL for ?cfg= param — restores config after localStorage wipe.
       this._loadConfigFromUrl();
 
@@ -148,6 +172,20 @@ function appData() {
         this.isAuthenticated = true;
         this.isInitializing = false;
         await this.loadExpenses();
+        // Load cached sheet URL from localStorage first (works for existing deployments).
+        this.sheetDisplayUrl = localStorage.getItem('et_sheet_display_url') || null;
+        // Then try to fetch from script (works for new deployments that support sheetUrl action).
+        AppScript.getSheetUrl()
+          .then(url => {
+            if (url) {
+              this.sheetDisplayUrl = url;
+              localStorage.setItem('et_sheet_display_url', url);
+            }
+          })
+          .catch(() => {
+            // Only flag as failed if we also have nothing cached — old deployment needs update.
+            if (!this.sheetDisplayUrl) this.sheetUrlFetchFailed = true;
+          });
         // Wire watchers and hash routing (same as OAuth path)
         this.$watch('currentView', (view) => {
           if (view === 'dashboard') this.$nextTick(() => this.initCharts());
@@ -421,6 +459,7 @@ function appData() {
       try {
         this.sheetId = await Sheets.findOrCreateSheet(this.sheetId);
         localStorage.setItem('et_sheet_id', this.sheetId);
+        this.sheetDisplayUrl = `https://docs.google.com/spreadsheets/d/${this.sheetId}`;
       } catch (err) {
         if (err.status === 401) { this.handleAuthError(); return; }
         console.error('Sheet setup error:', err);
@@ -994,7 +1033,32 @@ function appData() {
     },
 
     openSheet() {
-      if (this.sheetId) window.open(`https://docs.google.com/spreadsheets/d/${this.sheetId}`, '_blank');
+      const url = this.sheetDisplayUrl ||
+        (this.sheetId ? `https://docs.google.com/spreadsheets/d/${this.sheetId}` : null);
+      if (url) window.open(url, '_blank');
+    },
+
+    saveSheetUrl() {
+      const url = this.sheetUrlInput.trim();
+      if (!url) return;
+      this.sheetDisplayUrl = url;
+      this.sheetUrlFetchFailed = false;
+      localStorage.setItem('et_sheet_display_url', url);
+      this.sheetUrlInput = '';
+      this.showToast('Sheet URL saved.', 'success');
+    },
+
+    getScriptSource() {
+      return AppScript.SCRIPT_SOURCE;
+    },
+
+    async copyScriptSource() {
+      try {
+        await navigator.clipboard.writeText(AppScript.SCRIPT_SOURCE);
+        this.showToast('Script copied to clipboard.', 'success');
+      } catch {
+        this.showToast('Copy failed — please select and copy manually.', 'error');
+      }
     },
 
     async relinkSheet() {
